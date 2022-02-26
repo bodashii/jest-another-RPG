@@ -29,7 +29,7 @@ Game.prototype.initializeGame = function() {
             this.player = new Player(name);
 
             // test the object creation
-            console.log(this.currentEnemy, this.player);
+            this.startNewBattle();
         });
 };
 
