@@ -50,59 +50,83 @@ Game.prototype.startNewBattle = function() {
 // If player turn
 Game.prototype.battle = function() {
     if (this.isPlayerTurn) {
-        // player prompts will go here
+        // player prompts
+        if (this.isPlayerTurn) {
+            inquirer
+                .prompt({
+                    type: 'list',
+                    message: 'What would you like to do?',
+                    name: 'action',
+                    choices: ['Attack', 'Use potion']
+                })
+                .then(({ action }) => {
+                    if (action === 'Use potion') {
+                        if(!this.player.getInventory()) {
+                            console.log("You don't have any potions!");
+    
+                            return this.checkEndOfBattle();
+                        }
+    
+                        inquirer
+                            .prompt({
+                                type: 'list',
+                                message: 'Which potion would you like to use?',
+                                name: 'action',
+                                choices: this.player.getInventory().map((item, index) => `${index + 1}: ${item.name}`)
+                            })
+                            .then(({ action }) => {
+                                const potionDetails = action.split(': ');
+    
+                                this.player.usePotion(potionDetails[0] - 1);
+                                console.log(`You used a ${potionDetails[1]} potion.`);
+    
+                                this.checkEndOfBattle();
+                            });
+                    } else {
+                        const damage = this.player.getAttackValue();
+                        this.currentEnemy.reduceHealth(damage);
+    
+                        console.log(`You attacked the ${this.currentEnemy.name}`);
+                        console.log(this.currentEnemy.getHealth());
+    
+                        this.checkEndOfBattle();
+                    }
+                });
+        }
     } else {
         const damage = this.currentEnemy.getAttackValue();
         this.player.reduceHealth(damage);
 
         console.log(`You were attacked by the ${this.currentEnemy.name}`);
         console.log(this.player.getHealth());
+
+        this.checkEndOfBattle();
     }
 
-    if (this.isPlayerTurn) {
-        inquirer
-            .prompt({
-                type: 'list',
-                message: 'What would you like to do?',
-                name: 'action',
-                choices: ['Attack', 'Use potion']
-            })
-            .then(({ action }) => {
-                if (action === 'Use potion') {
-                    if(!this.player.getInventory()) {
-                        console.log("You don't have any potions!");
-                        return;
-                    }
+    
+};
 
-                    inquirer
-                        .prompt({
-                            type: 'list',
-                            message: 'Which potion would you like to use?',
-                            name: 'action',
-                            choices: this.player.getInventory().map((item, index) => `${index + 1}: ${item.name}`)
-                        })
-                        .then(({ action }) => {
-                            const potionDetails = action.split(': ');
+Game.prototype.checkEndOfBattle = function() {
+    if (this.player.isAlive() && this.currentEnemy.isAlive()) {
+        this.isPlayerTurn = !this.isPlayerTurn;
+        this.battle();
+    } else if (this.player.isAlive() && !this.currentEnemy.isAlive()) {
+        console.log(`You've defeated the ${this.currentEnemy.name}`);
 
-                            this.player.usePotion(potionDetails[0] - 1);
-                            console.log(`You used a ${potionDetails[1]} potion.`);
-                        });
-                } else {
-                    const damage = this.player.getAttackValue();
-                    this.currentEnemy.reduceHealth(damage);
+        this.player.addPotion(this.currentEnemy.potion);
+        console.log(`${this.player.name} found a ${this.currentEnemy.potion.name} potion`);
 
-                    console.log(`You attacked the ${this.currentEnemy.name}`);
-                    console.log(this.currentEnemy.getHealth());
-                }
-            });
+        this.roundNumber++;
+
+        if (this.roundNumber < this.enemies.length) {
+            this.currentEnemy = this.enemies[this.roundNumber];
+            this.startNewBattle();
+        } else {
+            console.log('You win!');
+        }
+    } else {
+        console.log("You've been defeated!");
     }
 };
-    // prompt user to attack or use a potion
-    // if using a potion 
-        // display list of potion objects to user
-        // apply selected potion effect to player
-    // if attacking
-        // subtract health from enemy based on player attack value
-
 
 module.exports = Game;
